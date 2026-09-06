@@ -22,21 +22,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.weight
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Menu
-import androidx.compose.material.icons.outlined.PowerSettingsNew
-import androidx.compose.material.icons.outlined.Security
-import androidx.compose.material.icons.outlined.Shield
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
@@ -61,26 +49,23 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
 data class VpnServer(
+    val flag: String,
     val country: String,
     val city: String,
     val code: String,
-    val flag: String,
-    val ping: Int,
-    val tag: String
+    val ping: Int
 )
 
-enum class ConnectionState {
-    DISCONNECTED,
+enum class VpnState {
+    OFF,
     CONNECTING,
-    CONNECTED
+    ON
 }
 
+private val Bg = Color(0xFF050706)
+private val Panel = Color(0xFF0B100D)
+private val Line = Color(0xFF203027)
 private val Neon = Color(0xFF72FF72)
-private val NeonSoft = Color(0xFFB6FFB6)
-private val Background = Color(0xFF050706)
-private val Panel = Color(0xFF0A0F0C)
-private val Panel2 = Color(0xFF0E1511)
-private val Border = Color(0xFF203027)
 private val Muted = Color(0xFF829287)
 
 class MainActivity : ComponentActivity() {
@@ -89,16 +74,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-
             MaterialTheme(
                 colorScheme = darkColorScheme(
                     primary = Neon,
-                    background = Background,
+                    background = Bg,
                     surface = Panel
                 )
             ) {
-
-                VoidVpnApp()
+                VoidVpnScreen()
             }
         }
     }
@@ -106,245 +89,150 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun VoidVpnApp() {
+fun VoidVpnScreen() {
 
     val servers = remember {
         listOf(
-
-            VpnServer(
-                country = "United Kingdom",
-                city = "London",
-                code = "UK",
-                flag = "🇬🇧",
-                ping = 43,
-                tag = "FAST"
-            ),
-
-            VpnServer(
-                country = "United States",
-                city = "New York",
-                code = "US",
-                flag = "🇺🇸",
-                ping = 66,
-                tag = "STREAM"
-            ),
-
-            VpnServer(
-                country = "Germany",
-                city = "Frankfurt",
-                code = "DE",
-                flag = "🇩🇪",
-                ping = 52,
-                tag = "LOW PING"
-            ),
-
-            VpnServer(
-                country = "Netherlands",
-                city = "Amsterdam",
-                code = "NL",
-                flag = "🇳🇱",
-                ping = 48,
-                tag = "PRIVACY"
-            ),
-
-            VpnServer(
-                country = "Singapore",
-                city = "Singapore",
-                code = "SG",
-                flag = "🇸🇬",
-                ping = 89,
-                tag = "ASIA"
-            )
+            VpnServer("🇬🇧", "United Kingdom", "London", "UK", 43),
+            VpnServer("🇺🇸", "United States", "New York", "US", 66),
+            VpnServer("🇩🇪", "Germany", "Frankfurt", "DE", 52),
+            VpnServer("🇳🇱", "Netherlands", "Amsterdam", "NL", 48),
+            VpnServer("🇸🇬", "Singapore", "Singapore", "SG", 89)
         )
     }
 
-    var selectedServer by remember {
-        mutableStateOf(servers.first())
+    var selected by remember {
+        mutableStateOf(servers[0])
     }
 
-    var connectionState by remember {
-        mutableStateOf(ConnectionState.DISCONNECTED)
+    var state by remember {
+        mutableStateOf(VpnState.OFF)
     }
 
-    var showServers by remember {
+    var serverMenu by remember {
         mutableStateOf(false)
     }
 
-    var elapsedSeconds by remember {
+    var seconds by remember {
         mutableIntStateOf(0)
     }
 
-    LaunchedEffect(connectionState) {
-
-        if (connectionState == ConnectionState.CONNECTING) {
-
-            delay(2200)
-
-            connectionState = ConnectionState.CONNECTED
-
-            elapsedSeconds = 0
+    LaunchedEffect(state) {
+        if (state == VpnState.CONNECTING) {
+            delay(1800)
+            state = VpnState.ON
+            seconds = 0
         }
     }
 
-    LaunchedEffect(connectionState) {
-
-        while (connectionState == ConnectionState.CONNECTED) {
-
+    LaunchedEffect(state) {
+        while (state == VpnState.ON) {
             delay(1000)
-
-            elapsedSeconds++
+            seconds++
         }
     }
 
-    if (showServers) {
-
+    if (serverMenu) {
         ModalBottomSheet(
             onDismissRequest = {
-                showServers = false
+                serverMenu = false
             },
-            containerColor = Panel,
-            contentColor = Color.White
+            containerColor = Panel
         ) {
 
-            ServerSelector(
-                servers = servers,
-                selected = selectedServer,
-                onSelect = { server ->
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
 
-                    selectedServer = server
+                Text(
+                    text = "SELECT EXIT NODE",
+                    color = Color.White,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 20.sp,
+                    letterSpacing = 2.sp
+                )
 
-                    connectionState =
-                        ConnectionState.DISCONNECTED
+                Spacer(
+                    modifier = Modifier.height(15.dp)
+                )
 
-                    showServers = false
+                servers.forEach { server ->
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 5.dp)
+                            .background(
+                                color =
+                                    if (server == selected)
+                                        Color(0xFF102117)
+                                    else
+                                        Color(0xFF09100B),
+                                shape = RoundedCornerShape(15.dp)
+                            )
+                            .border(
+                                width = 1.dp,
+                                color =
+                                    if (server == selected)
+                                        Neon
+                                    else
+                                        Line,
+                                shape = RoundedCornerShape(15.dp)
+                            )
+                            .clickable {
+                                selected = server
+                                state = VpnState.OFF
+                                serverMenu = false
+                            }
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+
+                        Text(
+                            text = server.flag,
+                            fontSize = 25.sp
+                        )
+
+                        Spacer(
+                            modifier = Modifier.size(12.dp)
+                        )
+
+                        Column {
+
+                            Text(
+                                text = server.country,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
+
+                            Text(
+                                text = "${server.city} • ${server.ping} ms",
+                                color = Muted,
+                                fontSize = 10.sp
+                            )
+                        }
+                    }
                 }
-            )
+
+                Spacer(
+                    modifier = Modifier.height(25.dp)
+                )
+            }
         }
     }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Background
+        color = Bg
     ) {
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .systemBarsPadding()
-                .padding(horizontal = 18.dp)
-        ) {
-
-            Spacer(
-                modifier = Modifier.height(8.dp)
-            )
-
-            TopHeader()
-
-            Spacer(
-                modifier = Modifier.height(14.dp)
-            )
-
-            StatusBar(
-                state = connectionState
-            )
-
-            Spacer(
-                modifier = Modifier.height(14.dp)
-            )
-
-            ServerCard(
-                server = selectedServer,
-                onClick = {
-                    showServers = true
-                }
-            )
-
-            Spacer(
-                modifier = Modifier.height(20.dp)
-            )
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-
-                ConnectButton(
-                    state = connectionState,
-                    onClick = {
-
-                        connectionState =
-                            when (connectionState) {
-
-                                ConnectionState.DISCONNECTED ->
-                                    ConnectionState.CONNECTING
-
-                                ConnectionState.CONNECTING ->
-                                    ConnectionState.DISCONNECTED
-
-                                ConnectionState.CONNECTED ->
-                                    ConnectionState.DISCONNECTED
-                            }
-                    }
-                )
-            }
-
-            ConnectionStats(
-                state = connectionState,
-                server = selectedServer,
-                elapsedSeconds = elapsedSeconds
-            )
-
-            Spacer(
-                modifier = Modifier.height(14.dp)
-            )
-
-            SecurityStatus(
-                state = connectionState
-            )
-
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-        }
-    }
-}
-
-@Composable
-fun TopHeader() {
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .background(
-                    color = Panel,
-                    shape = RoundedCornerShape(14.dp)
-                )
-                .border(
-                    width = 1.dp,
-                    color = Border,
-                    shape = RoundedCornerShape(14.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-
-            Icon(
-                imageVector = Icons.Outlined.Menu,
-                contentDescription = "Menu",
-                tint = Neon
-            )
-        }
-
-        Column(
-            modifier = Modifier.weight(1f),
+                .padding(18.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
@@ -352,107 +240,106 @@ fun TopHeader() {
                 text = "VOID VPN",
                 color = Color.White,
                 fontWeight = FontWeight.Black,
-                fontSize = 18.sp,
-                letterSpacing = 3.sp
+                fontSize = 23.sp,
+                letterSpacing = 4.sp
             )
 
             Text(
                 text = "PRIVATE NETWORK TERMINAL",
                 color = Muted,
                 fontFamily = FontFamily.Monospace,
-                fontSize = 8.sp,
+                fontSize = 9.sp,
                 letterSpacing = 1.sp
             )
-        }
 
-        Box(
-            modifier = Modifier
-                .size(42.dp)
-                .background(
-                    color = Panel,
-                    shape = RoundedCornerShape(14.dp)
-                )
-                .border(
-                    width = 1.dp,
-                    color = Border,
-                    shape = RoundedCornerShape(14.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
+            Spacer(
+                modifier = Modifier.height(22.dp)
+            )
 
-            Icon(
-                imageVector = Icons.Outlined.Shield,
-                contentDescription = "Shield",
-                tint = Neon
+            ServerCard(
+                server = selected,
+                onClick = {
+                    serverMenu = true
+                }
+            )
+
+            Spacer(
+                modifier = Modifier.height(35.dp)
+            )
+
+            ConnectCore(
+                state = state,
+                onClick = {
+                    state =
+                        when (state) {
+                            VpnState.OFF -> VpnState.CONNECTING
+                            VpnState.CONNECTING -> VpnState.OFF
+                            VpnState.ON -> VpnState.OFF
+                        }
+                }
+            )
+
+            Spacer(
+                modifier = Modifier.height(32.dp)
+            )
+
+            Text(
+                text =
+                    when (state) {
+                        VpnState.OFF ->
+                            "SYSTEM READY • TUNNEL OFFLINE"
+
+                        VpnState.CONNECTING ->
+                            "NEGOTIATING SECURE TUNNEL..."
+
+                        VpnState.ON ->
+                            "SECURE TUNNEL ACTIVE"
+                    },
+                color =
+                    if (state == VpnState.ON)
+                        Neon
+                    else
+                        Muted,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 10.sp
+            )
+
+            Spacer(
+                modifier = Modifier.height(22.dp)
+            )
+
+            Stats(
+                server = selected,
+                seconds = seconds,
+                connected = state == VpnState.ON
+            )
+
+            Spacer(
+                modifier = Modifier.height(18.dp)
+            )
+
+            Text(
+                text =
+                    if (state == VpnState.ON)
+                        "ENCRYPTED ROUTE ACTIVE"
+                    else
+                        "READY FOR SECURE ROUTE",
+                color =
+                    if (state == VpnState.ON)
+                        Neon
+                    else
+                        Color.White,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 10.sp
+            )
+
+            Text(
+                text = "REAL VPN ENGINE WILL BE ADDED NEXT",
+                color = Muted,
+                fontSize = 8.sp
             )
         }
-    }
-}
-
-@Composable
-fun StatusBar(
-    state: ConnectionState
-) {
-
-    val text =
-        when (state) {
-
-            ConnectionState.DISCONNECTED ->
-                "SYSTEM READY • TUNNEL OFFLINE"
-
-            ConnectionState.CONNECTING ->
-                "NEGOTIATING SECURE TUNNEL..."
-
-            ConnectionState.CONNECTED ->
-                "SECURE TUNNEL ACTIVE"
-        }
-
-    val color =
-        if (state == ConnectionState.CONNECTED) {
-            Neon
-        } else {
-            Muted
-        }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                color = Panel,
-                shape = RoundedCornerShape(14.dp)
-            )
-            .border(
-                width = 1.dp,
-                color = Border,
-                shape = RoundedCornerShape(14.dp)
-            )
-            .padding(
-                horizontal = 14.dp,
-                vertical = 11.dp
-            ),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .background(
-                    color = color,
-                    shape = CircleShape
-                )
-        )
-
-        Spacer(
-            modifier = Modifier.size(9.dp)
-        )
-
-        Text(
-            text = text,
-            color = color,
-            fontFamily = FontFamily.Monospace,
-            fontSize = 10.sp,
-            letterSpacing = 1.sp
-        )
     }
 }
 
@@ -466,55 +353,37 @@ fun ServerCard(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                color = Panel2,
+                color = Panel,
                 shape = RoundedCornerShape(20.dp)
             )
             .border(
                 width = 1.dp,
-                color = Border,
+                color = Line,
                 shape = RoundedCornerShape(20.dp)
             )
             .clickable {
                 onClick()
             }
-            .padding(15.dp),
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
 
-        Box(
-            modifier = Modifier
-                .size(52.dp)
-                .background(
-                    color = Color(0xFF111B14),
-                    shape = RoundedCornerShape(16.dp)
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-
-            Text(
-                text = server.flag,
-                fontSize = 26.sp
-            )
-        }
-
-        Spacer(
-            modifier = Modifier.size(13.dp)
+        Text(
+            text = server.flag,
+            fontSize = 30.sp
         )
 
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
+        Spacer(
+            modifier = Modifier.size(14.dp)
+        )
+
+        Column {
 
             Text(
                 text = "SELECTED SERVER",
                 color = Neon,
                 fontFamily = FontFamily.Monospace,
-                fontSize = 8.sp,
-                letterSpacing = 1.sp
-            )
-
-            Spacer(
-                modifier = Modifier.height(3.dp)
+                fontSize = 8.sp
             )
 
             Text(
@@ -525,101 +394,76 @@ fun ServerCard(
             )
 
             Text(
-                text = "${server.ping} ms • ${server.tag}",
+                text = "${server.ping} ms • ${server.code}-01",
                 color = Muted,
-                fontFamily = FontFamily.Monospace,
                 fontSize = 10.sp
             )
         }
-
-        Icon(
-            imageVector = Icons.Outlined.KeyboardArrowDown,
-            contentDescription = "Select server",
-            tint = Neon
-        )
     }
 }
 
 @Composable
-fun ConnectButton(
-    state: ConnectionState,
+fun ConnectCore(
+    state: VpnState,
     onClick: () -> Unit
 ) {
 
-    val infiniteTransition =
+    val transition =
         rememberInfiniteTransition(
-            label = "connectRotation"
+            label = "vpn"
         )
 
-    val rotation by infiniteTransition.animateFloat(
+    val rotation by transition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(
+            tween(
                 durationMillis =
-                    if (state == ConnectionState.CONNECTING) {
-                        900
-                    } else {
-                        4500
-                    },
+                    if (state == VpnState.CONNECTING)
+                        700
+                    else
+                        4000,
                 easing = LinearEasing
             )
         ),
         label = "rotation"
     )
 
-    val activeColor =
+    val ring =
         when (state) {
-
-            ConnectionState.DISCONNECTED ->
-                Color(0xFF36513F)
-
-            ConnectionState.CONNECTING ->
-                NeonSoft
-
-            ConnectionState.CONNECTED ->
-                Neon
+            VpnState.OFF -> Color(0xFF35513F)
+            VpnState.CONNECTING -> Color(0xFFB6FFB6)
+            VpnState.ON -> Neon
         }
 
     Box(
-        modifier = Modifier
-            .size(280.dp),
+        modifier = Modifier.size(270.dp),
         contentAlignment = Alignment.Center
     ) {
 
         Box(
             modifier = Modifier
-                .size(245.dp)
+                .size(235.dp)
                 .graphicsLayer {
                     rotationZ = rotation
                 }
                 .border(
                     width = 2.dp,
-                    color = activeColor.copy(alpha = 0.35f),
+                    color = ring.copy(alpha = 0.35f),
                     shape = CircleShape
                 )
         )
 
         Box(
             modifier = Modifier
-                .size(210.dp)
-                .border(
-                    width = 1.dp,
-                    color = activeColor.copy(alpha = 0.20f),
-                    shape = CircleShape
-                )
-        )
-
-        Box(
-            modifier = Modifier
-                .size(168.dp)
+                .size(165.dp)
                 .background(
                     color = Color(0xFF07100A),
                     shape = CircleShape
                 )
                 .border(
                     width = 2.dp,
-                    color = activeColor,
+                    color = ring,
                     shape = CircleShape
                 )
                 .clickable {
@@ -632,34 +476,18 @@ fun ConnectButton(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                Icon(
-                    imageVector =
-                        if (state == ConnectionState.CONNECTED) {
-                            Icons.Outlined.Lock
-                        } else {
-                            Icons.Outlined.PowerSettingsNew
-                        },
-                    contentDescription = "Connect",
-                    tint = activeColor,
-                    modifier = Modifier.size(40.dp)
-                )
-
-                Spacer(
-                    modifier = Modifier.height(8.dp)
+                Text(
+                    text = "⏻",
+                    color = ring,
+                    fontSize = 42.sp
                 )
 
                 Text(
                     text =
                         when (state) {
-
-                            ConnectionState.DISCONNECTED ->
-                                "CONNECT"
-
-                            ConnectionState.CONNECTING ->
-                                "CONNECTING"
-
-                            ConnectionState.CONNECTED ->
-                                "PROTECTED"
+                            VpnState.OFF -> "CONNECT"
+                            VpnState.CONNECTING -> "CONNECTING"
+                            VpnState.ON -> "PROTECTED"
                         },
                     color = Color.White,
                     fontWeight = FontWeight.Black,
@@ -667,27 +495,14 @@ fun ConnectButton(
                     letterSpacing = 2.sp
                 )
 
-                Spacer(
-                    modifier = Modifier.height(3.dp)
-                )
-
                 Text(
                     text =
-                        when (state) {
-
-                            ConnectionState.DISCONNECTED ->
-                                "TAP TO START"
-
-                            ConnectionState.CONNECTING ->
-                                "AUTH / HANDSHAKE"
-
-                            ConnectionState.CONNECTED ->
-                                "TAP TO DISCONNECT"
-                        },
+                        if (state == VpnState.ON)
+                            "TAP TO DISCONNECT"
+                        else
+                            "TAP TO START",
                     color = Muted,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 8.sp,
-                    textAlign = TextAlign.Center
+                    fontSize = 8.sp
                 )
             }
         }
@@ -695,27 +510,18 @@ fun ConnectButton(
 }
 
 @Composable
-fun ConnectionStats(
-    state: ConnectionState,
+fun Stats(
     server: VpnServer,
-    elapsedSeconds: Int
+    seconds: Int,
+    connected: Boolean
 ) {
 
-    val hours =
-        elapsedSeconds / 3600
-
-    val minutes =
-        (elapsedSeconds % 3600) / 60
-
-    val seconds =
-        elapsedSeconds % 60
-
-    val sessionTime =
+    val time =
         String.format(
             "%02d:%02d:%02d",
-            hours,
-            minutes,
-            seconds
+            seconds / 3600,
+            (seconds % 3600) / 60,
+            seconds % 60
         )
 
     Row(
@@ -727,31 +533,30 @@ fun ConnectionStats(
             )
             .border(
                 width = 1.dp,
-                color = Border,
+                color = Line,
                 shape = RoundedCornerShape(18.dp)
             )
             .padding(vertical = 15.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
+        horizontalArrangement =
+            Arrangement.SpaceEvenly
     ) {
 
         StatItem(
-            title = "PING",
-            value = "${server.ping} ms"
+            "PING",
+            "${server.ping} ms"
         )
 
         StatItem(
-            title = "SESSION",
-            value =
-                if (state == ConnectionState.CONNECTED) {
-                    sessionTime
-                } else {
-                    "--:--:--"
-                }
+            "SESSION",
+            if (connected)
+                time
+            else
+                "--:--:--"
         )
 
         StatItem(
-            title = "NODE",
-            value = "${server.code}-01"
+            "NODE",
+            "${server.code}-01"
         )
     }
 }
@@ -763,7 +568,8 @@ fun StatItem(
 ) {
 
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment =
+            Alignment.CenterHorizontally
     ) {
 
         Text(
@@ -773,5 +579,11 @@ fun StatItem(
             fontSize = 8.sp
         )
 
-        Spacer(
-            modifier =
+        Text(
+            text = value,
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = 11.sp
+        )
+    }
+}
